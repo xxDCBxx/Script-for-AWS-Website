@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from supabase import create_client, Client
 
 # Load .env
@@ -61,6 +61,15 @@ def parse_duration(duration_str):
     
     return total_seconds
 
+# Utility function to ensure datetime is timezone-aware
+def to_aware(dt):
+    """Normalize a datetime to timezone-aware UTC."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
 @bot.event
 async def on_ready():
     print(f"Bot logged in as {bot.user}")
@@ -70,6 +79,18 @@ async def on_ready():
     stage_channel = bot.get_channel(STAGE_CHANNEL_ID)
     if stage_channel and isinstance(stage_channel, discord.StageChannel):
         try:
+            # Check if any members are already in the stage channel and track their join time
+            for member in stage_channel.members:
+                if member == bot.user or member.bot:
+                    continue
+
+                voice_state = member.voice
+                if voice_state and voice_state.channel and voice_state.channel.id == STAGE_CHANNEL_ID:
+                    join_time = to_aware(voice_state.joined_at) or datetime.now(timezone.utc)
+                    attendance[member.id] = attendance.get(member.id, {"total_seconds": 0})
+                    attendance[member.id]["join"] = join_time
+                    print(f"{member.display_name} was already in stage since {join_time} — tracking from existing join time")
+
             # Connect to stage channel
             voice_client = await stage_channel.connect()
             # Request to speak (join as audience)
