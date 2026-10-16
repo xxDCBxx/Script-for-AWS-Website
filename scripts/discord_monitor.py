@@ -14,6 +14,7 @@ SUPABASE_KEY = os.getenv("DISCORD_SUPABASE_KEY")
 
 # Get meeting name from user input
 MEETING_NAME = input("Enter meeting name: ").strip()
+JOIN_STAGE = os.getenv("JOIN_STAGE", "false").lower() in ("1", "true", "yes")
 
 # Initialize Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -70,34 +71,49 @@ def to_aware(dt):
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
 
+async def initialize_stage_attendance(stage_channel: discord.StageChannel):
+    for member in stage_channel.members:
+        if member == bot.user or member.bot:
+            continue
+
+        voice_state = member.voice
+        if voice_state and voice_state.channel and voice_state.channel.id == STAGE_CHANNEL_ID:
+            join_time = to_aware(getattr(voice_state, "joined_at", None)) or datetime.now(timezone.utc)
+            attendance[member.id] = attendance.get(member.id, {"total_seconds": 0})
+            attendance[member.id]["join"] = join_time
+            print(f"{member.display_name} was already in stage since {join_time} — tracking from existing join time")
+
+async def on_ready_stage_channel():
+    stage_channel = bot.get_channel(STAGE_CHANNEL_ID)
+    if stage_channel is None:
+        try:
+            stage_channel = await bot.fetch_channel(STAGE_CHANNEL_ID)
+        except Exception:
+            return None
+    if not isinstance(stage_channel, discord.StageChannel):
+        return None
+    await initialize_stage_attendance(stage_channel)
+    return stage_channel
+
 @bot.event
 async def on_ready():
     print(f"Bot logged in as {bot.user}")
     print(f"Monitoring stage channel ID: {STAGE_CHANNEL_ID}")
-    
-    # Join stage as audience
-    stage_channel = bot.get_channel(STAGE_CHANNEL_ID)
-    if stage_channel and isinstance(stage_channel, discord.StageChannel):
-        try:
-            # Check if any members are already in the stage channel and track their join time
-            for member in stage_channel.members:
-                if member == bot.user or member.bot:
-                    continue
 
-                voice_state = member.voice
-                if voice_state and voice_state.channel and voice_state.channel.id == STAGE_CHANNEL_ID:
-                    join_time = to_aware(voice_state.joined_at) or datetime.now(timezone.utc)
-                    attendance[member.id] = attendance.get(member.id, {"total_seconds": 0})
-                    attendance[member.id]["join"] = join_time
-                    print(f"{member.display_name} was already in stage since {join_time} — tracking from existing join time")
-
-            # Connect to stage channel
-            voice_client = await stage_channel.connect()
-            # Request to speak (join as audience)
-            await stage_channel.guild.me.edit(suppress=True)
-            print(f"Joined stage channel as audience: {stage_channel.name}")
-        except Exception as e:
-            print(f"Failed to join stage: {e}")
+    stage_channel = await on_ready_stage_channel()
+    if stage_channel:
+        if JOIN_STAGE:
+            print("JOIN_STAGE enabled: attempting a single voice join.")
+            try:
+                voice_client = await stage_channel.connect()
+                await stage_channel.guild.me.edit(suppress=True)
+                print(f"Joined stage channel as audience: {stage_channel.name}")
+            except discord.HTTPException as exc:
+                print(f"Failed to join stage once: {exc}")
+            except Exception as exc:
+                print(f"Unexpected error joining stage: {exc}")
+        else:
+            print("Stage attendance monitoring active without connecting voice.")
     else:
         print("Stage channel not found or not a stage channel")
 

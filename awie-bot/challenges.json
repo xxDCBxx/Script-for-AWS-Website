@@ -1,0 +1,333 @@
+[
+  {
+    "id": "mc-01-ec2",
+    "type": "multiple_choice",
+    "scenario": "Awie is setting up the backbone of a new web application and needs a place to run the server.",
+    "question": "Which AWS service provides scalable virtual servers in the cloud?",
+    "options": ["Amazon S3", "Amazon EC2", "Amazon RDS", "AWS Lambda"],
+    "answer": 1,
+    "trivia": "EC2 means Elastic Compute Cloud. It provides virtual servers that users can configure and scale according to their computing needs."
+  },
+  {
+    "id": "mc-02-s3",
+    "type": "multiple_choice",
+    "scenario": "Awie needs to store uploaded photos, videos, and documents for the club website.",
+    "question": "Which AWS service is primarily used to store files, images, videos, and other objects?",
+    "options": ["Amazon S3", "Amazon EC2", "Amazon VPC", "Amazon CloudWatch"],
+    "answer": 0,
+    "trivia": "S3 means Simple Storage Service. Remember S3 for object storage, such as photos, videos, backups, and documents."
+  },
+  {
+    "id": "mc-03-cybersecurity",
+    "type": "multiple_choice",
+    "scenario": "Awie is explaining to a friend why cybersecurity matters in the IT industry.",
+    "question": "What is one of the primary responsibilities of cybersecurity in the IT era?",
+    "options": ["Increasing screen brightness", "Improving internet speed only", "Protecting systems and data from digital threats", "Replacing all human workers"],
+    "answer": 2,
+    "trivia": "Cybersecurity protects computers, networks, applications, and sensitive information against threats such as malware, phishing, and unauthorized access."
+  },
+  {
+    "id": "mc-04-ai",
+    "type": "multiple_choice",
+    "scenario": "Awie is exploring how technology is becoming smarter in everyday life.",
+    "question": "Which of the following is an example of artificial intelligence (AI) in everyday technology?",
+    "options": ["A traditional wall clock", "A voice assistant that understands spoken commands", "A manual typewriter", "A standard light switch"],
+    "answer": 1,
+    "trivia": "AI enables systems to perform tasks that typically require human intelligence, such as recognizing speech, understanding language, and making predictions."
+  },
+  {
+    "id": "mc-05-lifo",
+    "type": "multiple_choice",
+    "scenario": "Awie is brushing up on data structures before a technical interview.",
+    "question": "Which data structure follows the Last In, First Out (LIFO) principle?",
+    "options": ["Queue", "Linked List", "Stack", "Graph"],
+    "answer": 2,
+    "trivia": "Think of a stack of plates. The last plate placed on top is the first one removed. This is the LIFO principle."
+  },
+  {
+    "id": "mc-06-fifo",
+    "type": "multiple_choice",
+    "scenario": "Awie is designing a print queue — the first document sent should be the first one printed.",
+    "question": "Which data structure follows the First In, First Out (FIFO) principle?",
+    "options": ["Stack", "Queue", "Tree", "Hash Table"],
+    "answer": 1,
+    "trivia": "Think of a line at a cashier. The first person to join the line is usually the first person served. This is the FIFO principle."
+  },
+  {
+    "id": "mc-07-primary-key",
+    "type": "multiple_choice",
+    "scenario": "Awie is designing a student records system and needs every row to be uniquely identifiable.",
+    "question": "In a relational database, what is the primary purpose of a primary key?",
+    "options": ["To uniquely identify each record in a table", "To encrypt every database field", "To sort all tables alphabetically", "To delete duplicate databases automatically"],
+    "answer": 0,
+    "trivia": "A primary key must uniquely identify each row in a table. For example, a student ID can distinguish one student from every other student."
+  },
+  {
+    "id": "mc-08-recursion",
+    "type": "multiple_choice",
+    "scenario": "Awie is writing a function that needs to break a big problem into smaller and smaller pieces of itself.",
+    "question": "Which programming concept allows a function to call itself to solve a smaller version of a problem?",
+    "options": ["Iteration", "Inheritance", "Encapsulation", "Recursion"],
+    "answer": 3,
+    "trivia": "Recursion occurs when a function calls itself. It typically includes a base case to stop the repeated calls and prevent infinite recursion."
+  },
+  {
+    "id": "connect-s01-aws-services",
+    "type": "connect_the_dots",
+    "scenario": "Awie is reviewing the core AWS services and needs to match each question to the correct AWS service.",
+    "instructions": "**Match each question to the correct AWS service.**",
+    "pairs": [
+      ["Which AWS service provides resizable virtual servers?", "Amazon EC2"],
+      ["Which AWS service is designed for object storage?", "Amazon S3"],
+      ["Which AWS service is a managed relational database service?", "Amazon RDS"],
+      ["Which AWS service runs code without requiring server management?", "AWS Lambda"],
+      ["Which AWS service helps create an isolated virtual network in AWS?", "Amazon VPC"]
+    ],
+    "trivia": "These five are foundational AWS services — compute (EC2, Lambda), storage (S3), database (RDS), and networking (VPC)."
+  },
+  {
+    "id": "connect-s02-cybersecurity",
+    "type": "connect_the_dots",
+    "scenario": "Awie is studying for a cybersecurity quiz and needs to match each question to the correct term.",
+    "instructions": "**Match each question to the correct cybersecurity term.**",
+    "pairs": [
+      ["What field focuses on protecting systems and data from digital threats?", "Cybersecurity"],
+      ["What is a fraudulent message designed to steal sensitive information called?", "Phishing"],
+      ["What software is designed to damage or exploit a computer system?", "Malware"],
+      ["What security method requires two or more forms of verification?", "Multi-factor authentication"],
+      ["What is the practice of turning readable information into coded form to protect it?", "Encryption"]
+    ],
+    "trivia": "Cybersecurity covers a wide range of defenses — from MFA and encryption to detecting phishing and removing malware."
+  },
+  {
+    "id": "connect-s03-data-structures",
+    "type": "connect_the_dots",
+    "scenario": "Awie is reviewing common data structures and needs to match each question to the right answer.",
+    "instructions": "**Match each question to the correct data structure.**",
+    "pairs": [
+      ["Which data structure follows Last In, First Out (LIFO)?", "Stack"],
+      ["Which data structure follows First In, First Out (FIFO)?", "Queue"],
+      ["Which data structure stores items as nodes connected by links?", "Linked list"],
+      ["Which data structure organizes hierarchical relationships using parent and child nodes?", "Tree"],
+      ["Which data structure commonly stores key-value pairs for fast lookup?", "Hash table"]
+    ],
+    "trivia": "Choosing the right data structure is key to writing efficient programs — each one shines in different situations."
+  },
+  {
+    "id": "connect-s04-databases",
+    "type": "connect_the_dots",
+    "scenario": "Awie is learning relational database concepts and needs to match each question to the correct term.",
+    "instructions": "**Match each question to the correct database term.**",
+    "pairs": [
+      ["Which database key uniquely identifies each row in a table?", "Primary key"],
+      ["Which language is commonly used to query relational databases?", "SQL"],
+      ["What do we call a field that refers to a key in another table?", "Foreign key"],
+      ["What database operation retrieves data that meets specified conditions?", "SELECT query"],
+      ["What helps reduce unnecessary duplication in a relational database design?", "Normalization"]
+    ],
+    "trivia": "SQL is the backbone of relational databases. Primary keys, foreign keys, normalization, and SELECT queries keep data clean, linked, and accessible."
+  },
+  {
+    "id": "connect-s05-ai-tech",
+    "type": "connect_the_dots",
+    "scenario": "Awie is exploring emerging technologies and needs to match each question to the correct technology.",
+    "instructions": "**Match each question to the correct technology.**",
+    "pairs": [
+      ["What technology enables computers to perform tasks such as speech recognition?", "Artificial intelligence"],
+      ["What AI approach learns patterns from examples and data?", "Machine learning"],
+      ["What technology connects physical devices to the internet to send and receive data?", "Internet of Things (IoT)"],
+      ["What technology overlays digital information onto a view of the real world?", "Augmented reality"],
+      ["What technology creates an immersive, computer-generated environment?", "Virtual reality"]
+    ],
+    "trivia": "AI, ML, IoT, AR, and VR are reshaping industries — from healthcare to entertainment to manufacturing."
+  },
+  {
+    "id": "connect-s06-hardware-os",
+    "type": "connect_the_dots",
+    "scenario": "Awie is reviewing computer hardware and OS concepts for a quiz.",
+    "instructions": "**Match each question to the correct component or system.**",
+    "pairs": [
+      ["What is the main purpose of an operating system?", "Manage hardware and software resources"],
+      ["Which component temporarily stores data the CPU is actively using?", "RAM"],
+      ["Which component executes instructions and processes data?", "CPU"],
+      ["Which type of storage retains data when power is turned off?", "SSD"],
+      ["What system translates domain names into IP addresses?", "DNS"]
+    ],
+    "trivia": "Together, the OS, CPU, RAM, SSD, and DNS form the foundation of how a computer runs and connects to the internet."
+  },
+  {
+    "id": "connect-s07-networking",
+    "type": "connect_the_dots",
+    "scenario": "Awie is reviewing networking concepts and needs to match each question to the correct term.",
+    "instructions": "**Match each question to the correct networking term.**",
+    "pairs": [
+      ["Which protocol is commonly used to securely access websites?", "HTTPS"],
+      ["What unique numerical label identifies a device on an IP network?", "IP address"],
+      ["What device forwards data between different networks?", "Router"],
+      ["What system filters network traffic based on security rules?", "Firewall"],
+      ["What is the delay in data traveling across a network commonly called?", "Latency"]
+    ],
+    "trivia": "IP addresses, routers, firewalls, HTTPS, and latency are all core networking concepts that determine how data moves safely and efficiently across the internet."
+  },
+  {
+    "id": "connect-s08-programming",
+    "type": "connect_the_dots",
+    "scenario": "Awie is reviewing core programming concepts for a beginner's workshop.",
+    "instructions": "**Match each question to the correct programming concept.**",
+    "pairs": [
+      ["What programming concept repeats a block of instructions while a condition holds?", "Loop"],
+      ["What is a named, reusable block of code designed to perform a task?", "Function"],
+      ["What is an error in a program that causes it to behave incorrectly called?", "Bug"],
+      ["What process finds and fixes errors in a program?", "Debugging"],
+      ["What is a step-by-step procedure for solving a problem called?", "Algorithm"]
+    ],
+    "trivia": "These five concepts are the building blocks of programming logic — master them and you can reason through almost any problem."
+  },
+  {
+    "id": "wordle-w01-cloud",
+    "type": "wordle",
+    "scenario": "Awie is explaining how AWS delivers computing resources over the internet.",
+    "clue": "A way to access computing resources such as servers and storage over the internet. (5 letters)",
+    "word": "CLOUD",
+    "trivia": "Cloud computing provides on-demand access to computing resources over a network. AWS is a major cloud services provider."
+  },
+  {
+    "id": "wordle-w02-phish",
+    "type": "wordle",
+    "scenario": "Awie received a suspicious email asking them to click a link and enter their password.",
+    "clue": "A deceptive attempt to trick someone into revealing sensitive information online. (5 letters)",
+    "word": "PHISH",
+    "trivia": "Phishing is a social engineering attack that often uses fake emails, messages, or websites to steal information."
+  },
+  {
+    "id": "wordle-w03-stack",
+    "type": "wordle",
+    "scenario": "Awie is implementing an undo feature — the most recent action must always be reversed first.",
+    "clue": "A data structure that follows Last In, First Out (LIFO). (5 letters)",
+    "word": "STACK",
+    "trivia": "A stack removes the most recently added item first, like taking the top plate from a pile."
+  },
+  {
+    "id": "wordle-w04-query",
+    "type": "wordle",
+    "scenario": "Awie needs to pull a list of students from the database who scored above 90.",
+    "clue": "A request for data or information from a database. (5 letters)",
+    "word": "QUERY",
+    "trivia": "A database query asks the database to retrieve or manipulate information. SQL is commonly used to write relational database queries."
+  },
+  {
+    "id": "wordle-w05-robot",
+    "type": "wordle",
+    "scenario": "Awie is exploring how AI is being used to automate physical tasks in warehouses.",
+    "clue": "A programmable machine that can perform tasks automatically. (5 letters)",
+    "word": "ROBOT",
+    "trivia": "Robots can be programmed to carry out physical or digital tasks. Some use AI to interpret information and make decisions."
+  },
+  {
+    "id": "wordle-w06-cache",
+    "type": "wordle",
+    "scenario": "Awie notices their CPU can access certain data much faster than other data stored on disk.",
+    "clue": "A small, fast storage area that keeps frequently used data close to the processor. (5 letters)",
+    "word": "CACHE",
+    "trivia": "Cache memory helps the CPU access frequently needed data more quickly than retrieving it from slower storage."
+  },
+  {
+    "id": "wordle-w07-route",
+    "type": "wordle",
+    "scenario": "Awie is tracing how a data packet travels from their laptop to a server in another country.",
+    "clue": "To direct data packets toward their destination across a network. (5 letters)",
+    "word": "ROUTE",
+    "trivia": "Routers forward packets between networks and use routing information to choose paths toward destinations."
+  },
+  {
+    "id": "wordle-w08-debug",
+    "type": "wordle",
+    "scenario": "Awie's program is printing the wrong output and they need to track down exactly where it goes wrong.",
+    "clue": "To find and fix errors in a program. (5 letters)",
+    "word": "DEBUG",
+    "trivia": "Debugging is the process of locating, understanding, and correcting defects in software."
+  },
+  {
+    "id": "coding-c01-greeting",
+    "type": "coding",
+    "scenario": "Awie is building a simple welcome script that greets users by name.",
+    "prompt": "The name has already been collected. Write the **one line** that prints a greeting in the format `Hello, Ana!`.\n```python\nname = input('Enter your name: ')\n# your line here\n```",
+    "accepted_patterns": [
+      "print\\(f'Hello,\\{name\\}!'\\)",
+      "print\\(f\"Hello,\\{name\\}!\"\\)",
+      "print\\('Hello,'+name+'!'\\)",
+      "print\\(\"Hello,\"+name+\"!\"\\)"
+    ],
+    "example_answer": "print(f'Hello, {name}!')",
+    "trivia": "An f-string lets you embed variables directly inside a string. The input() function captures what the user types."
+  },
+  {
+    "id": "coding-c02-html",
+    "type": "coding",
+    "scenario": "Awie is writing a script that outputs an HTML heading as text.",
+    "prompt": "Write the **one line** that stores the HTML heading `<h1>Welcome to Technology</h1>` in a variable called `html`.\n```python\n# Store the HTML heading in a string\n# your line here\nprint(html)\n```",
+    "accepted_patterns": [
+      "html='<h1>WelcometoTechnology</h1>'",
+      "html=\"<h1>WelcometoTechnology</h1>\""
+    ],
+    "example_answer": "html = '<h1>Welcome to Technology</h1>'",
+    "trivia": "Python can store HTML markup as a plain string. HTML defines the structure of web pages using tags like <h1> for headings."
+  },
+  {
+    "id": "coding-c03-css",
+    "type": "coding",
+    "scenario": "Awie wants to demonstrate a CSS rule by storing it in Python and printing it out.",
+    "prompt": "Write the **one line** that stores the CSS rule `p { color: blue; }` in a variable called `css`.\n```python\n# Store a CSS rule in a string\n# your line here\nprint(css)\n```",
+    "accepted_patterns": [
+      "css='p\\{color:blue;\\}'",
+      "css=\"p\\{color:blue;\\}\""
+    ],
+    "example_answer": "css = 'p { color: blue; }'",
+    "trivia": "CSS controls the appearance of web pages. This rule sets the text color of all paragraph elements to blue."
+  },
+  {
+    "id": "coding-c04-javascript",
+    "type": "coding",
+    "scenario": "Awie is demonstrating JavaScript syntax by storing a statement in Python and printing it.",
+    "prompt": "Write the **one line** that stores the JavaScript statement `console.log('Hello, web!');` in a variable called `javascript`.\n```python\n# Store the JavaScript statement in a string\n# your line here\nprint(javascript)\n```",
+    "accepted_patterns": [
+      "javascript='console\\.log\\('Hello,web!'\\);'"
+    ],
+    "example_answer": "javascript = \"console.log('Hello, web!');\"",
+    "trivia": "JavaScript adds interactivity to websites. Python stores and prints the statement as text but does not execute it as JavaScript."
+  },
+  {
+    "id": "coding-c05-php",
+    "type": "coding",
+    "scenario": "Awie is showing how a PHP statement looks by storing it in a Python variable.",
+    "prompt": "Write the **one line** that stores the PHP statement `echo 'Hello from PHP!';` in a variable called `php`.\n```python\n# Store the PHP statement in a string\n# your line here\nprint(php)\n```",
+    "accepted_patterns": [
+      "php='echo'HellofromPHP!';'"
+    ],
+    "example_answer": "php = \"echo 'Hello from PHP!';\"",
+    "trivia": "PHP is commonly used for server-side web development. Python prints the statement as text rather than executing it."
+  },
+  {
+    "id": "coding-c06-sql",
+    "type": "coding",
+    "scenario": "Awie needs to demonstrate an SQL command by storing it in Python first.",
+    "prompt": "Write the **one line** that stores the SQL command `SELECT * FROM students;` in a variable called `sql`.\n```python\n# Store the SQL command in a string\n# your line here\nprint(sql)\n```",
+    "accepted_patterns": [
+      "sql='SELECT\\*FROMstudents;'",
+      "sql=\"SELECT\\*FROMstudents;\""
+    ],
+    "example_answer": "sql = 'SELECT * FROM students;'",
+    "trivia": "SQL retrieves and manages data in relational databases. SELECT * returns all columns from a table."
+  },
+  {
+    "id": "coding-c07-password",
+    "type": "coding",
+    "scenario": "Awie is building a simple password checker. The password has already been collected.",
+    "prompt": "Write the **one line** that checks if the password is too short (fewer than 8 characters) and prints `Password is too short`.\n```python\npassword = input('Enter a password: ')\n# your line here\n    print('Password is too short')\nelse:\n    print('Password length accepted')\n```",
+    "accepted_patterns": [
+      "iflen\\(password\\)<8:"
+    ],
+    "example_answer": "if len(password) < 8:",
+    "trivia": "The len() function counts the number of characters in a string. Password length is a basic but important security check."
+  }
+]
