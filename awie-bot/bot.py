@@ -15,7 +15,7 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent.parent / ".env")
+load_dotenv(Path(__file__).parent.parent / ".env", override=False)
 
 import db  # noqa: E402  (after load_dotenv so the Supabase settings from .env are available)
 from game_logic import (  # noqa: E402
