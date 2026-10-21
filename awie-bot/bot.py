@@ -17,6 +17,12 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env", override=False)
 
+# Temporary debug — remove after confirming Railway vars are loaded
+import sys
+print("DEBUG TOKEN:", repr(os.getenv("DISCORD_TOKEN")), file=sys.stderr)
+print("DEBUG GUILD:", repr(os.getenv("GUILD_ID")), file=sys.stderr)
+print("DEBUG ENV KEYS:", [k for k in os.environ if "DISCORD" in k or "GUILD" in k or "SUPA" in k], file=sys.stderr)
+
 import db  # noqa: E402  (after load_dotenv so the Supabase settings from .env are available)
 from game_logic import (  # noqa: E402
     POINTS,
