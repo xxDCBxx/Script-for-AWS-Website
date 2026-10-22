@@ -17,12 +17,6 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env", override=False)
 
-# Temporary debug — remove after confirming Railway vars are loaded
-import sys
-print("DEBUG TOKEN:", repr(os.getenv("DISCORD_TOKEN")), file=sys.stderr)
-print("DEBUG GUILD:", repr(os.getenv("GUILD_ID")), file=sys.stderr)
-print("DEBUG ENV KEYS:", [k for k in os.environ if "DISCORD" in k or "GUILD" in k or "SUPA" in k], file=sys.stderr)
-
 import db  # noqa: E402  (after load_dotenv so the Supabase settings from .env are available)
 from game_logic import (  # noqa: E402
     POINTS,
@@ -40,7 +34,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = os.getenv("GUILD_ID")  # your server ID -> slash commands appear instantly
 TZ = ZoneInfo(os.getenv("TIMEZONE", "Asia/Manila"))
 LAUNCH_DATE = date.fromisoformat(os.getenv("LAUNCH_DATE")) if os.getenv("LAUNCH_DATE") else None
-STREAK_REQUIRES_DAILY = os.getenv("STREAK_REQUIRES_DAILY", "false").lower() == "true"
+STREAK_REQUIRES_WEEKLY = os.getenv("STREAK_REQUIRES_WEEKLY", "false").lower() == "true"
 SESSION_MINUTES = int(os.getenv("SESSION_MINUTES", "10"))  # time allowed to answer once started
 
 ORANGE, GREEN, RED = 0xFF9900, 0x2ECC71, 0xE74C3C
@@ -62,10 +56,10 @@ def today_local() -> date:
 
 
 def challenge_for(d: date) -> dict:
-    """Everyone gets the same Play of the Day.
+    """Everyone gets the same Play of the Week.
 
     Challenges rotate in a shuffled order so no question repeats within a full
-    cycle (len(CHALLENGES) days). Each cycle uses a different seed so the order
+    cycle (len(CHALLENGES) weeks). Each cycle uses a different seed so the order
     differs across cycles. Everyone on the same day always gets the same challenge.
     """
     import random as _random
@@ -92,7 +86,7 @@ def menu_embed() -> discord.Embed:
         title="🤖 Build With Awie!",
         description=(
             "Hi, I'm **Awie**! I'm building a system on AWS and I need your help.\n\n"
-            "🎮 **Play of the Day** - solve today's AWS challenge, earn points and build a streak.\n"
+            "🎮 **Play of the Week** - solve this week's AWS challenge, earn points and build a streak.\n"
             "📊 **Stats** - see your score, streak and raffle boosts."
         ),
         color=ORANGE,
@@ -163,7 +157,7 @@ def result_embed(ch: dict, correct: bool, points: int, result: dict | None, deta
 
 # ----------------------------------------------------------------------------- challenge views
 class ChallengeView(discord.ui.View):
-    """Base class: one view per Play of the Day session (only the player can use it)."""
+    """Base class: one view per Play of the Week session (only the player can use it)."""
 
     def __init__(self, challenge: dict, user_id: int, play_date: str, record: bool):
         super().__init__(timeout=SESSION_MINUTES * 60)
@@ -210,7 +204,7 @@ class ChallengeView(discord.ui.View):
         if self.record:
             try:
                 result = await db.finish_play(
-                    self.user_id, self.play_date, correct, points, daily=STREAK_REQUIRES_DAILY
+                    self.user_id, self.play_date, correct, points, daily=STREAK_REQUIRES_WEEKLY
                 )
             except Exception:  # noqa: BLE001
                 log.exception("Could not save result for user %s", self.user_id)
@@ -218,7 +212,7 @@ class ChallengeView(discord.ui.View):
                     embed=discord.Embed(
                         title="⚠️ Awie couldn't save your result",
                         description="There was a connection problem, so your answer wasn't recorded. "
-                        "Please tell an officer - they can reset your Play of the Day so you can try again.",
+                        "Please tell an officer - they can reset your Play of the Week so you can try again.",
                         color=RED,
                     ),
                     view=None,
@@ -233,13 +227,13 @@ class ChallengeView(discord.ui.View):
         self.finished = True
         if self.record:
             try:
-                await db.finish_play(self.user_id, self.play_date, False, 0, daily=STREAK_REQUIRES_DAILY)
+                await db.finish_play(self.user_id, self.play_date, False, 0, daily=STREAK_REQUIRES_WEEKLY)
             except Exception:  # noqa: BLE001
                 log.exception("Could not record timeout for user %s", self.user_id)
         if self.origin:
             e = discord.Embed(
                 title="⏰ Time's up!",
-                description="This Play of the Day session expired and counted as a loss. Try again tomorrow!",
+                description="This Play of the Week session expired and counted as a loss. Try again next week!",
                 color=RED,
             )
             e.add_field(name="💡 Awie's Trivia", value=self.challenge["trivia"], inline=False)
@@ -422,7 +416,7 @@ VIEW_FOR_TYPE = {
 
 
 # ----------------------------------------------------------------------------- main menu actions
-async def start_play_of_the_day(interaction: discord.Interaction, preview_index: int | None = None):
+async def start_play_of_the_week(interaction: discord.Interaction, preview_index: int | None = None):
     user = interaction.user
     today = today_local()
     iso = today.isoformat()
@@ -435,7 +429,7 @@ async def start_play_of_the_day(interaction: discord.Interaction, preview_index:
             await interaction.edit_original_response(
                 embed=discord.Embed(
                     title="🚀 Awie is almost ready!",
-                    description=f"Play of the Day opens on **{LAUNCH_DATE:%B %d, %Y}**. See you then!",
+                    description=f"Play of the Week opens on **{LAUNCH_DATE:%B %d, %Y}**. See you then!",
                     color=ORANGE,
                 )
             )
@@ -448,7 +442,7 @@ async def start_play_of_the_day(interaction: discord.Interaction, preview_index:
         challenge = challenge_for(today)
         if not await db.start_play(user.id, user.display_name, iso, challenge["id"]):
             await interaction.edit_original_response(
-                content="You already have today's Play of the Day. Check **Stats** to see your progress!"
+                content="You already have this week's Play of the Week. Check **Stats** to see your progress!"
             )
             return
         record = True
@@ -464,15 +458,15 @@ async def start_play_of_the_day(interaction: discord.Interaction, preview_index:
 async def _existing_play_message(user_id: int, iso: str, play: dict) -> str:
     if play["status"] == "pending":
         if play["age_seconds"] > (SESSION_MINUTES + 1) * 60:
-            await db.finish_play(user_id, iso, False, 0, daily=STREAK_REQUIRES_DAILY)
-            return "Your earlier session expired and counted as a loss. Come back tomorrow for a new Play of the Day!"
+            await db.finish_play(user_id, iso, False, 0, daily=STREAK_REQUIRES_WEEKLY)
+            return "Your earlier session expired and counted as a loss. Come back next week for a new Play of the Week!"
         return (
-            "You already have an active Play of the Day - finish it first! "
+            "You already have an active Play of the Week - finish it first! "
             f"(It expires {SESSION_MINUTES} minutes after you started.)"
         )
     icon = "✅" if play["status"] == "correct" else "❌"
     return (
-        f"{icon} You've already played today's Play of the Day. "
+        f"{icon} You've already played this week's Play of the Week. "
         f"A new one unlocks at midnight ({TZ.key}). Check **Stats** to see your progress!"
     )
 
@@ -483,9 +477,9 @@ class MainMenu(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Play of the Day", emoji="🎮", style=discord.ButtonStyle.primary, custom_id="awie:play")
+    @discord.ui.button(label="Play of the Week", emoji="🎮", style=discord.ButtonStyle.primary, custom_id="awie:play")
     async def play(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await start_play_of_the_day(interaction)
+        await start_play_of_the_week(interaction)
 
     @discord.ui.button(label="Stats", emoji="📊", style=discord.ButtonStyle.secondary, custom_id="awie:stats")
     async def stats(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -560,7 +554,7 @@ async def setup_menu_cmd(interaction: discord.Interaction):
 @app_commands.guild_only()
 @admin_only
 async def preview_cmd(interaction: discord.Interaction, number: app_commands.Range[int, 1, len(CHALLENGES)]):
-    await start_play_of_the_day(interaction, preview_index=number)
+    await start_play_of_the_week(interaction, preview_index=number)
 
 
 @bot.tree.command(name="raffle_export", description="(Admin) Export raffle boost entries (one name per extra slot)")
@@ -589,15 +583,15 @@ async def raffle_export_cmd(interaction: discord.Interaction):
     await interaction.followup.send(embed=embed, file=file, ephemeral=True)
 
 
-@bot.tree.command(name="reset_today", description="(Admin) Let a member replay today's Play of the Day")
+@bot.tree.command(name="reset_this_week", description="(Admin) Let a member replay this week's Play of the Week")
 @app_commands.describe(member="Member to reset (their score and streak are NOT reverted)")
 @app_commands.guild_only()
 @admin_only
-async def reset_today_cmd(interaction: discord.Interaction, member: discord.Member):
+async def reset_this_week_cmd(interaction: discord.Interaction, member: discord.Member):
     await interaction.response.defer(ephemeral=True)
     ok = await db.delete_play(member.id, today_local().isoformat())
     await interaction.followup.send(
-        f"Reset today's play for {member.display_name}." if ok else f"{member.display_name} has no play today.",
+        f"Reset this week's play for {member.display_name}." if ok else f"{member.display_name} has no play this week.",
         ephemeral=True,
     )
 

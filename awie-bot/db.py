@@ -1,4 +1,4 @@
-"""Supabase (Postgres) storage for Build With Awie! (users, scores, streaks, daily plays).
+"""Supabase (Postgres) storage for Build With Awie! (users, scores, streaks, weekly plays).
 
 All writes that must be consistent (starting a play, scoring it, updating streaks) happen inside the
 database functions defined in schema.sql, so they are atomic. Every function here is async.
@@ -67,7 +67,7 @@ async def get_play(user_id: int, play_date: str) -> dict | None:
 
 
 async def start_play(user_id: int, name: str, play_date: str, challenge_id: str) -> bool:
-    """Reserve today's Play of the Day. False if the member already has one for that date."""
+    """Reserve this week's Play of the Week. False if the member already has one for that date."""
     res = await _retry(
         lambda: _db()
         .rpc(

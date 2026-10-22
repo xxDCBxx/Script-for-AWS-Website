@@ -1,14 +1,14 @@
 # Build With Awie! — Discord bot
 
-A Discord bot for the **AWS Student Builder Group – UPHSL** server. Members play a daily AWS challenge
-(**Play of the Day**), earn points and streaks, check **Stats**, and turn points into **raffle boosts**.
+A Discord bot for the **AWS Student Builder Group – UPHSL** server. Members play a weekly AWS challenge
+(**Play of the Week**), earn points and streaks, check **Stats**, and turn points into **raffle boosts**.
 Data is stored in **Supabase** (hosted Postgres).
 
 ## What it does (mapped to the concept paper)
 
 | Concept paper | In the bot |
 |---|---|
-| Main menu: Play of the Day / Stats | Persistent menu with two buttons (`/setup_menu`, or `/awie` for a private copy) |
+| Main menu: Play of the Week / Stats | Persistent menu with two buttons (`/setup_menu`, or `/awie` for a private copy) |
 | Multiple Choice (+1) | A–D buttons |
 | Connect the Dots (+3) | One dropdown per item + "Lock in" button |
 | Wordle (+3) | 6 guesses via a pop-up box, 🟩🟨⬛ board |
@@ -18,7 +18,7 @@ Data is stored in **Supabase** (hosted Postgres).
 | Stats (name, score, current & highest streak) | `Stats` button or `/stats` |
 | Raffle boost: every 20 points = +1 slot | Shown in Stats; admins export with `/raffle_export` |
 | Database of user records | Supabase tables `awie_users` and `awie_plays` |
-| Launch: Oct 25, 2026, 12:00 AM | `LAUNCH_DATE=2026-10-25` locks Play of the Day for members until then |
+| Launch: Oct 25, 2026, 12:00 AM | `LAUNCH_DATE=2026-10-25` locks Play of the Week for members until then |
 
 ## Setup
 
@@ -90,7 +90,7 @@ WantedBy=multi-user.target
 Then `sudo systemctl enable --now awie`.
 
 > **Supabase free-plan note:** projects on the free plan can be paused after a period of inactivity. Once members are
-> playing daily this isn't an issue, but check your project's status before launch and during any quiet period.
+> playing weekly this isn't an issue, but check your project's status before launch and during any quiet period.
 
 ## Commands
 

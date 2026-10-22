@@ -22,7 +22,7 @@ def raffle_boosts(score: int) -> int:
 
 
 def apply_result(consecutive_wins: int, current_streak: int, highest_streak: int, correct: bool):
-    """Update streak state after one Play of the Day.
+    """Update streak state after one Play of the Week.
 
     - 3 correct Plays in a row  -> Streak = 1
     - every further correct Play -> Streak + 1
