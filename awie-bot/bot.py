@@ -23,6 +23,7 @@ from game_logic import (  # noqa: E402
     RAFFLE_STEP,
     STREAK_TO_START,
     check_code,
+    challenge_index_for,
     raffle_boosts,
     score_wordle,
 )
@@ -56,25 +57,8 @@ def today_local() -> date:
 
 
 def challenge_for(d: date) -> dict:
-    """Everyone gets the same Play of the Week.
-
-    Challenges rotate in a shuffled order so no question repeats within a full
-    cycle (len(CHALLENGES) weeks). Each cycle uses a different seed so the order
-    differs across cycles. Everyone on the same day always gets the same challenge.
-    """
-    import random as _random
-    n = len(CHALLENGES)
-    # Days since a fixed epoch so cycle arithmetic works correctly
-    epoch = date(2025, 1, 1)
-    day_number = (d - epoch).days          # total days since epoch
-    cycle = day_number // n                # which full cycle we are in
-    day_in_cycle = day_number % n         # which day within that cycle
-
-    rng = _random.Random(cycle)            # seed by cycle → different shuffle each cycle
-    indices = list(range(n))
-    rng.shuffle(indices)
-
-    return CHALLENGES[indices[day_in_cycle]]
+    """Return the shared challenge for the calendar week containing d."""
+    return CHALLENGES[challenge_index_for(d, len(CHALLENGES))]
 
 
 def is_admin(interaction: discord.Interaction) -> bool:

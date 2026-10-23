@@ -121,7 +121,7 @@ Then `sudo systemctl enable --now awie`.
 
 ## Editing the questions
 All content is in `challenges.json`. Four formats: `multiple_choice`, `connect_the_dots` (2–4 pairs), `wordle` (4–10 letter word), `coding` (answers checked by pattern). Copy an existing entry, change it, then run `python validate_challenges.py`.
-The Play of the Day rotates through the list by date, so everyone gets the same challenge each day. The list repeats after 18 days, so add more before then.
+The Play of the Week rotates at Sunday 12:00 AM, starting a Sunday–Saturday calendar week in the configured `TIMEZONE` (Asia/Manila by default), so everyone gets the same challenge all week. Each challenge appears once per 18-week cycle; add more before the cycle repeats.
 
 ## Editing the rules
 The streak rules live in two places that must match: `game_logic.py` (`apply_result`, used by the self-tests) and the `awie_finish_play` function in `schema.sql` (what the live bot uses, so the score and streak update together in one step). The 20-points-per-boost rule is `RAFFLE_STEP` in `game_logic.py`.

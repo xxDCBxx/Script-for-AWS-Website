@@ -325,7 +325,11 @@
     "scenario": "Awie is building a simple password checker. The password has already been collected.",
     "prompt": "Write the **one line** that checks if the password is too short (fewer than 8 characters) and prints `Password is too short`.\n```python\npassword = input('Enter a password: ')\n# your line here\n    print('Password is too short')\nelse:\n    print('Password length accepted')\n```",
     "accepted_patterns": [
-      "iflen\\(password\\)<8:"
+      "iflen\\(password\\)<8:",
+      "iflen\\(password\\)<=7:",
+      "ifnotlen\\(password\\)>=8:",
+      "if8>len\\(password\\):",
+      "if7>=len\\(password\\):"
     ],
     "example_answer": "if len(password) < 8:",
     "trivia": "The len() function counts the number of characters in a string. Password length is a basic but important security check."

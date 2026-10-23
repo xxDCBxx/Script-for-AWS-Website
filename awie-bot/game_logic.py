@@ -1,7 +1,9 @@
 """Pure game rules for Build With Awie! (no Discord or database code here, so it is easy to test)."""
 from __future__ import annotations
 
+import random
 import re
+from datetime import date, timedelta
 from typing import Iterable
 
 # Points for a CORRECT answer, per challenge format (from the concept paper).
@@ -14,6 +16,21 @@ POINTS = {
 
 RAFFLE_STEP = 20        # every 20 points = +1 raffle boost
 STREAK_TO_START = 3     # 3 correct Plays of the Day in a row = Streak 1
+
+
+def challenge_index_for(d: date, count: int) -> int:
+    """Return a stable, shuffled challenge index for the Sunday-Saturday week containing d."""
+    if count <= 0:
+        raise ValueError("count must be positive")
+
+    epoch_sunday = date(2025, 1, 5)
+    week_start = d - timedelta(days=(d.weekday() + 1) % 7)
+    week_number = (week_start - epoch_sunday).days // 7
+    cycle, week_in_cycle = divmod(week_number, count)
+
+    indices = list(range(count))
+    random.Random(cycle).shuffle(indices)
+    return indices[week_in_cycle]
 
 
 def raffle_boosts(score: int) -> int:
