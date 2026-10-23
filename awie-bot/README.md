@@ -38,7 +38,7 @@ its own copy of the key in its own `.env`.
 
 ### 2. Discord (bot account)
 1. Go to <https://discord.com/developers/applications> → **New Application** → name it *Build With Awie!* (upload Awie's picture as the app icon).
-2. Open the **Bot** tab → **Reset Token** → copy the token (keep it secret). No privileged intents are needed.
+2. Open the **Bot** tab → **Reset Token** → copy the token (keep it secret). No privileged intents are needed; Awie listens for voice-state updates for stage attendance.
 3. Copy the **Application ID** from the *General Information* tab.
 4. Invite it to your server with this link (replace `YOUR_CLIENT_ID`):
    `https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=52224&scope=bot%20applications.commands`
@@ -63,6 +63,10 @@ You should see `Awie is online`. If it stops with a Supabase error, re-check the
 ### 4. Put it in your server
 In the channel where members will play, run **`/setup_menu`** (needs the *Manage Server* permission).
 That posts the permanent menu. Members' answers and stats are private (only they see them).
+To announce the new challenge automatically each Sunday at 12:00 AM, set `WEEKLY_ANNOUNCEMENT_CHANNEL_ID` to the announcement channel's ID in the bot's environment (Railway → service → **Variables**). Enable Developer Mode in Discord, right-click the channel, and choose **Copy Channel ID**. The bot needs permission to view and send messages in that channel. Announcements do not ping everyone.
+To use the stage attendance tracker with this same bot connection, add `STAGE_CHANNEL_ID` in Railway Variables and set it to your Discord Stage Channel's ID (Developer Mode → right-click the stage channel → **Copy Channel ID**). Ensure Awie's role can view that stage channel. Railway will redeploy the service after the variable is added.
+
+An admin can run `/attendance_start meeting_name` to begin tracking and `/attendance_stop` to stop and save durations to the existing Supabase `attendance` table. Provide the meeting name without quotes. The table must have `display_name`, `username`, `duration`, and `meeting_name` columns, and Awie's existing Supabase credentials must have permission to read and write it. The tracker stores live join times in memory, so do not restart or redeploy the Railway service during a meeting; intervals that have not yet been saved could be lost.
 
 ### 5. Keep it running 24/7
 The bot only works while `python bot.py` is running. Options:
@@ -100,6 +104,8 @@ Then `sudo systemctl enable --now awie`.
 | `/stats` | everyone | Your stats |
 | `/leaderboard` | everyone | Top 10 by score |
 | `/setup_menu` | admin | Post the permanent menu in this channel |
+| `/attendance_start <meeting_name>` | admin | Start tracking participants in the configured stage channel |
+| `/attendance_stop` | admin | Stop tracking and save attendance durations |
 | `/preview_challenge <1-18>` | admin | Try any challenge without saving results |
 | `/raffle_export` | admin | `.txt` with each member's name repeated once per boost, ready to paste into the raffle wheel |
 | `/reset_today @member` | admin | Let a member replay today (their score/streak are not reverted) |

@@ -119,3 +119,54 @@ async def delete_play(user_id: int, play_date: str) -> bool:
         lambda: _db().table("awie_plays").delete().eq("user_id", user_id).eq("play_date", play_date).execute()
     )
     return bool(res.data)
+
+
+def _duration_seconds(value: str | int) -> int:
+    if isinstance(value, int):
+        return value
+
+    units = {"h": 3600, "m": 60, "s": 1}
+    return sum(int(part[:-1]) * units[part[-1]] for part in value.split() if part[-1] in units)
+
+
+def _format_duration(seconds: int) -> str:
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    parts = []
+    if hours:
+        parts.append(f"{hours}h")
+    if minutes:
+        parts.append(f"{minutes}m")
+    if seconds or not parts:
+        parts.append(f"{seconds}s")
+    return " ".join(parts)
+
+
+async def add_attendance_duration(display_name: str, username: str, meeting_name: str, seconds: int) -> None:
+    """Add a completed stage attendance interval to the existing attendance table."""
+    if seconds <= 0:
+        return
+
+    async def save():
+        table = _db().table("attendance")
+        query = table.select("duration").eq("display_name", display_name).eq("meeting_name", meeting_name).limit(1)
+        res = await query.execute()
+        if res.data:
+            total_seconds = _duration_seconds(res.data[0]["duration"]) + seconds
+            await (
+                table.update({"duration": _format_duration(total_seconds), "username": username})
+                .eq("display_name", display_name)
+                .eq("meeting_name", meeting_name)
+                .execute()
+            )
+        else:
+            await table.insert(
+                {
+                    "display_name": display_name,
+                    "username": username,
+                    "duration": _format_duration(seconds),
+                    "meeting_name": meeting_name,
+                }
+            ).execute()
+
+    await _retry(save)

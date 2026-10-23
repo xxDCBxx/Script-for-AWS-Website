@@ -1,18 +1,20 @@
 """Build With Awie! - Discord bot for AWS Student Builder Group - UPHSL."""
 from __future__ import annotations
 
+import asyncio
 import io
 import json
 import logging
 import os
 import random
-from datetime import date, datetime
+from dataclasses import dataclass
+from datetime import date, datetime, time as datetime_time, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import discord
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env", override=False)
@@ -33,10 +35,24 @@ log = logging.getLogger("awie")
 # ----------------------------------------------------------------------------- config
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = os.getenv("GUILD_ID")  # your server ID -> slash commands appear instantly
+announcement_channel_id = os.getenv("WEEKLY_ANNOUNCEMENT_CHANNEL_ID")
+ANNOUNCEMENT_CHANNEL_ID: int | None = None
+if announcement_channel_id:
+    try:
+        ANNOUNCEMENT_CHANNEL_ID = int(announcement_channel_id)
+    except ValueError as exc:
+        raise RuntimeError("WEEKLY_ANNOUNCEMENT_CHANNEL_ID must be a numeric Discord channel ID") from exc
 TZ = ZoneInfo(os.getenv("TIMEZONE", "Asia/Manila"))
 LAUNCH_DATE = date.fromisoformat(os.getenv("LAUNCH_DATE")) if os.getenv("LAUNCH_DATE") else None
 STREAK_REQUIRES_WEEKLY = os.getenv("STREAK_REQUIRES_WEEKLY", "false").lower() == "true"
 SESSION_MINUTES = int(os.getenv("SESSION_MINUTES", "10"))  # time allowed to answer once started
+stage_channel_id = os.getenv("STAGE_CHANNEL_ID")
+STAGE_CHANNEL_ID: int | None = None
+if stage_channel_id:
+    try:
+        STAGE_CHANNEL_ID = int(stage_channel_id)
+    except ValueError as exc:
+        raise RuntimeError("STAGE_CHANNEL_ID must be a numeric Discord stage channel ID") from exc
 
 ORANGE, GREEN, RED = 0xFF9900, 0x2ECC71, 0xE74C3C
 TYPE_LABEL = {
@@ -63,6 +79,24 @@ def challenge_for(d: date) -> dict:
 
 def is_admin(interaction: discord.Interaction) -> bool:
     return isinstance(interaction.user, discord.Member) and interaction.user.guild_permissions.manage_guild
+
+
+@dataclass
+class AttendanceRecord:
+    member: discord.Member
+    joined_at: datetime | None
+    elapsed_seconds: int = 0
+
+
+@dataclass
+class AttendanceSession:
+    meeting_name: str
+    records: dict[int, AttendanceRecord]
+    active: bool = True
+
+
+attendance_session: AttendanceSession | None = None
+attendance_lock = asyncio.Lock()
 
 
 def menu_embed() -> discord.Embed:
@@ -474,7 +508,9 @@ class MainMenu(discord.ui.View):
 # ----------------------------------------------------------------------------- bot + commands
 class AwieBot(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix=commands.when_mentioned, intents=discord.Intents.default())
+        intents = discord.Intents.default()
+        intents.voice_states = True
+        super().__init__(command_prefix=commands.when_mentioned, intents=intents)
 
     async def setup_hook(self):
         await db.init()
@@ -485,6 +521,38 @@ class AwieBot(commands.Bot):
             await self.tree.sync(guild=guild)
         else:
             await self.tree.sync()
+        if ANNOUNCEMENT_CHANNEL_ID:
+            self.weekly_announcement.start()
+            log.info("Weekly challenge announcements enabled for channel %s", ANNOUNCEMENT_CHANNEL_ID)
+        else:
+            log.info("Weekly challenge announcements disabled; set WEEKLY_ANNOUNCEMENT_CHANNEL_ID to enable")
+
+    @tasks.loop(time=datetime_time(hour=0, minute=0, tzinfo=TZ))
+    async def weekly_announcement(self):
+        if datetime.now(TZ).weekday() != 6:
+            return
+
+        channel_id = ANNOUNCEMENT_CHANNEL_ID
+        if channel_id is None:
+            raise RuntimeError("Weekly announcement task started without a configured channel ID")
+        channel = self.get_channel(channel_id)
+        if channel is None:
+            channel = await self.fetch_channel(channel_id)
+        if not isinstance(channel, discord.abc.Messageable):
+            raise TypeError("WEEKLY_ANNOUNCEMENT_CHANNEL_ID must identify a messageable Discord channel")
+        challenge = challenge_for(today_local())
+        embed = discord.Embed(
+            title="🎮 A new Play of the Week is here!",
+            description="This week's AWS challenge is ready. Open the bot menu and choose **Play of the Week**, "
+            "or use `/awie` to start.",
+            color=ORANGE,
+        )
+        await channel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+        log.info("Posted the weekly challenge announcement for %s", challenge["id"])
+
+    @weekly_announcement.before_loop
+    async def before_weekly_announcement(self):
+        await self.wait_until_ready()
 
     async def on_ready(self):
         log.info("Awie is online as %s (%d challenges loaded)", self.user, len(CHALLENGES))
@@ -494,10 +562,191 @@ bot = AwieBot()
 admin_only = app_commands.checks.has_permissions(manage_guild=True)
 
 
+@bot.event
+async def on_voice_state_update(
+    member: discord.Member,
+    before: discord.VoiceState,
+    after: discord.VoiceState,
+):
+    if member.bot or STAGE_CHANNEL_ID is None:
+        return
+
+    entered_stage = after.channel is not None and after.channel.id == STAGE_CHANNEL_ID
+    left_stage = before.channel is not None and before.channel.id == STAGE_CHANNEL_ID
+    if entered_stage == left_stage:
+        return
+
+    async with attendance_lock:
+        session = attendance_session
+        if session is None or not session.active:
+            return
+
+        now = datetime.now(timezone.utc)
+        record = session.records.get(member.id)
+        if entered_stage:
+            if record is None:
+                session.records[member.id] = AttendanceRecord(member=member, joined_at=now)
+            else:
+                record.member = member
+                record.joined_at = now
+            log.info("%s joined the tracked stage for %s", member.display_name, session.meeting_name)
+            return
+
+        if record is None or record.joined_at is None:
+            return
+        record.elapsed_seconds += max(0, int((now - record.joined_at).total_seconds()))
+        record.joined_at = None
+        try:
+            await db.add_attendance_duration(
+                member.display_name,
+                member.name,
+                session.meeting_name,
+                record.elapsed_seconds,
+            )
+        except Exception:
+            log.exception("Could not save stage attendance for %s", member.display_name)
+            return
+
+        log.info(
+            "Saved %s attendance for %s (%d seconds)",
+            member.display_name,
+            session.meeting_name,
+            record.elapsed_seconds,
+        )
+        del session.records[member.id]
+
+
 @bot.tree.command(name="awie", description="Open the Build With Awie! menu")
 @app_commands.guild_only()
 async def awie_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(embed=menu_embed(), view=MainMenu(), ephemeral=True)
+
+
+@bot.tree.command(name="attendance_start", description="(Admin) Start tracking attendance in the configured stage")
+@app_commands.describe(meeting_name="Name to use in the Supabase attendance table")
+@app_commands.guild_only()
+@admin_only
+async def attendance_start_cmd(interaction: discord.Interaction, meeting_name: app_commands.Range[str, 1, 100]):
+    global attendance_session
+
+    meeting_name = meeting_name.strip()
+    if not meeting_name:
+        await interaction.response.send_message("Enter a meeting name with at least one non-space character.", ephemeral=True)
+        return
+
+    if STAGE_CHANNEL_ID is None:
+        await interaction.response.send_message(
+            "Attendance tracking is not configured. Set `STAGE_CHANNEL_ID` in Railway Variables first.",
+            ephemeral=True,
+        )
+        return
+
+    async with attendance_lock:
+        if attendance_session is not None:
+            status = "already active" if attendance_session.active else "waiting for failed attendance saves to be retried"
+            await interaction.response.send_message(
+                f"An attendance session is {status}. Stop or retry that session before starting another.",
+                ephemeral=True,
+            )
+            return
+
+        channel = bot.get_channel(STAGE_CHANNEL_ID)
+        if channel is None:
+            channel = await bot.fetch_channel(STAGE_CHANNEL_ID)
+        if not isinstance(channel, discord.StageChannel):
+            await interaction.response.send_message(
+                "`STAGE_CHANNEL_ID` must identify a Discord Stage Channel.",
+                ephemeral=True,
+            )
+            return
+        if interaction.guild_id != channel.guild.id:
+            await interaction.response.send_message(
+                "The configured stage channel must be in this server.",
+                ephemeral=True,
+            )
+            return
+
+        now = datetime.now(timezone.utc)
+        records: dict[int, AttendanceRecord] = {}
+        for member in channel.members:
+            if member.bot:
+                continue
+            voice_state = member.voice
+            if voice_state is None or voice_state.channel is None or voice_state.channel.id != STAGE_CHANNEL_ID:
+                continue
+            joined_at = getattr(voice_state, "joined_at", None)
+            if joined_at is None:
+                joined_at = now
+            elif joined_at.tzinfo is None:
+                joined_at = joined_at.replace(tzinfo=timezone.utc)
+            else:
+                joined_at = joined_at.astimezone(timezone.utc)
+            records[member.id] = AttendanceRecord(member=member, joined_at=joined_at)
+
+        attendance_session = AttendanceSession(meeting_name=meeting_name, records=records)
+
+    await interaction.response.send_message(
+        f"Attendance tracking started for **{meeting_name}** in **{channel.name}**. "
+        f"Currently tracking {len(records)} participant(s). Use `/attendance_stop` when the event ends.",
+        ephemeral=True,
+    )
+
+
+@bot.tree.command(name="attendance_stop", description="(Admin) Stop tracking and save attendance")
+@app_commands.guild_only()
+@admin_only
+async def attendance_stop_cmd(interaction: discord.Interaction):
+    global attendance_session
+    await interaction.response.defer(ephemeral=True)
+
+    async with attendance_lock:
+        session = attendance_session
+        if session is None:
+            await interaction.followup.send("No attendance session is active.", ephemeral=True)
+            return
+
+        session.active = False
+        now = datetime.now(timezone.utc)
+        for record in session.records.values():
+            if record.joined_at is not None:
+                record.elapsed_seconds += max(0, int((now - record.joined_at).total_seconds()))
+                record.joined_at = None
+
+        failed_names: list[str] = []
+        for user_id, record in list(session.records.items()):
+            try:
+                await db.add_attendance_duration(
+                    record.member.display_name,
+                    record.member.name,
+                    session.meeting_name,
+                    record.elapsed_seconds,
+                )
+            except Exception:
+                log.exception(
+                    "Could not save final stage attendance for %s; it remains pending",
+                    record.member.display_name,
+                )
+                failed_names.append(record.member.display_name)
+            else:
+                del session.records[user_id]
+
+        if not session.records:
+            attendance_session = None
+
+    if failed_names:
+        names = ", ".join(failed_names[:10])
+        extra = f" and {len(failed_names) - 10} more" if len(failed_names) > 10 else ""
+        await interaction.followup.send(
+            f"Tracking stopped, but I couldn't save attendance for {names}{extra}. "
+            "The pending records are retained; run `/attendance_stop` again to retry.",
+            ephemeral=True,
+        )
+        return
+
+    await interaction.followup.send(
+        f"Attendance tracking stopped and saved for **{session.meeting_name}**.",
+        ephemeral=True,
+    )
 
 
 @bot.tree.command(name="stats", description="See your Build With Awie! score, streaks and raffle boosts")
