@@ -5,16 +5,30 @@ in sync. See README -> "Editing the rules".)
 """
 from datetime import date, timedelta
 
-from game_logic import apply_result, challenge_index_for, check_code, raffle_boosts, score_wordle
+from game_logic import (
+    apply_result,
+    challenge_index_for,
+    check_code,
+    raffle_boosts,
+    score_wordle,
+    skipped_week,
+    week_start_for,
+)
 
 # --- weekly challenge rotation: changes Sunday at 12:00 AM, consistent through Saturday
 week_start = date(2026, 10, 18)
+assert {week_start_for(week_start + timedelta(days=offset)) for offset in range(7)} == {week_start}
 week_indices = {
     challenge_index_for(week_start + timedelta(days=offset), 18)
     for offset in range(7)
 }
 assert len(week_indices) == 1
 assert challenge_index_for(week_start - timedelta(days=1), 18) != next(iter(week_indices))
+assert not skipped_week(None, week_start)
+assert not skipped_week(week_start - timedelta(weeks=1), week_start)
+assert skipped_week(week_start - timedelta(weeks=2), week_start)
+assert not skipped_week(week_start_for(week_start - timedelta(days=1)), week_start)
+assert skipped_week(week_start_for(week_start - timedelta(days=8)), week_start)
 cycle_start = date(2025, 1, 5)
 cycle_indices = {
     challenge_index_for(cycle_start + timedelta(weeks=offset), 18)

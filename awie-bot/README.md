@@ -119,7 +119,7 @@ Then `sudo systemctl enable --now awie`.
 
 ## Before launch checklist
 1. `/preview_challenge 1` … `18` to try every challenge (nothing is saved).
-2. Have a couple of officers test a real Play of the Day, then clear the test data in Supabase → SQL Editor:
+2. Have a couple of officers test a real Play of the Week, then clear the test data in Supabase → SQL Editor:
    ```sql
    truncate table public.awie_plays, public.awie_users;
    ```
@@ -134,9 +134,9 @@ The Play of the Week rotates at Sunday 12:00 AM, starting a Sunday–Saturday ca
 The streak rules live in two places that must match: `game_logic.py` (`apply_result`, used by the self-tests) and the `awie_finish_play` function in `schema.sql` (what the live bot uses, so the score and streak update together in one step). The 20-points-per-boost rule is `RAFFLE_STEP` in `game_logic.py`.
 
 ## Rules the bot follows (please confirm these match your intent)
-- **One Play of the Day per member per day**, resetting at midnight Manila time. Points are given only for correct answers.
+- **One Play of the Week per member per Sunday–Saturday week.** Members may choose any day that week; a new attempt unlocks Sunday at 12:00 AM in the configured timezone. Everyone sees the same challenge for that week.
 - **Abandoning counts as a loss.** Once someone starts, they have `SESSION_MINUTES` (default 10) to answer; otherwise it counts as a loss. This stops people from peeking at the question and retrying.
-- **Streak**: the paper says "3 correct answers across 3 consecutive Plays of the Day = Streak 1". The bot counts consecutive *plays* (missing a day doesn't break it). To also require daily play, set `STREAK_REQUIRES_DAILY=true`.
+- **Streak**: 3 correct weekly answers in a row = Streak 1, then +1 per consecutive weekly win. A loss resets it. If a player skips a whole week, the bot detects the gap when they complete their next weekly play and resets the streak before counting that result; they can still play that week's challenge on any day.
 - **Wordle** gives 6 guesses; the result only counts once the word is solved or all guesses are used.
 - **Coding Proper** checks for specific accepted answers (ignoring spacing and quote style), so it's a "fill in the line" format rather than free-form code.
 - **Raffle boosts** are the *extra* slots (score ÷ 20, rounded down). Members' regular raffle entry is unchanged.

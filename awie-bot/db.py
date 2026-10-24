@@ -67,7 +67,7 @@ async def get_play(user_id: int, play_date: str) -> dict | None:
 
 
 async def start_play(user_id: int, name: str, play_date: str, challenge_id: str) -> bool:
-    """Reserve this week's Play of the Week. False if the member already has one for that date."""
+    """Reserve this week's Play of the Week using its Sunday start date as the key."""
     res = await _retry(
         lambda: _db()
         .rpc(
@@ -84,7 +84,8 @@ async def finish_play(
 ) -> dict | None:
     """Resolve a pending play and update score/streaks atomically. None if it wasn't pending.
 
-    daily=True means a skipped calendar day also breaks the streak (STREAK_REQUIRES_DAILY).
+    daily=True applies the database function's calendar-day gap rule; the bot sets it only after detecting
+    a missed Sunday-Saturday week.
     """
     res = await _retry(
         lambda: _db()

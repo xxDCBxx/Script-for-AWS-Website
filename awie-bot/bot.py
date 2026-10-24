@@ -28,6 +28,8 @@ from game_logic import (  # noqa: E402
     challenge_index_for,
     raffle_boosts,
     score_wordle,
+    skipped_week,
+    week_start_for,
 )
 
 log = logging.getLogger("awie")
@@ -44,7 +46,6 @@ if announcement_channel_id:
         raise RuntimeError("WEEKLY_ANNOUNCEMENT_CHANNEL_ID must be a numeric Discord channel ID") from exc
 TZ = ZoneInfo(os.getenv("TIMEZONE", "Asia/Manila"))
 LAUNCH_DATE = date.fromisoformat(os.getenv("LAUNCH_DATE")) if os.getenv("LAUNCH_DATE") else None
-STREAK_REQUIRES_WEEKLY = os.getenv("STREAK_REQUIRES_WEEKLY", "false").lower() == "true"
 SESSION_MINUTES = int(os.getenv("SESSION_MINUTES", "10"))  # time allowed to answer once started
 stage_channel_id = os.getenv("STAGE_CHANNEL_ID")
 STAGE_CHANNEL_ID: int | None = None
@@ -75,6 +76,28 @@ def today_local() -> date:
 def challenge_for(d: date) -> dict:
     """Return the shared challenge for the calendar week containing d."""
     return CHALLENGES[challenge_index_for(d, len(CHALLENGES))]
+
+
+async def finish_weekly_play(user_id: int, play_date: str, correct: bool, points: int) -> dict | None:
+    user = await db.get_user(user_id)
+    last_play_value = user.get("last_play_date") if user else None
+    if isinstance(last_play_value, datetime):
+        last_play = last_play_value.date()
+    elif isinstance(last_play_value, date):
+        last_play = last_play_value
+    elif last_play_value:
+        last_play = date.fromisoformat(str(last_play_value))
+    else:
+        last_play = None
+
+    last_play_week = week_start_for(last_play) if last_play else None
+    week_was_skipped = skipped_week(last_play_week, date.fromisoformat(play_date))
+    result = await db.finish_play(user_id, play_date, correct, points, daily=week_was_skipped)
+
+    if result and week_was_skipped and user and user.get("current_streak", 0) > 0:
+        result["streak_lost"] = True
+        result["previous_streak"] = user["current_streak"]
+    return result
 
 
 def weekly_announcement_embed() -> discord.Embed:
@@ -229,9 +252,7 @@ class ChallengeView(discord.ui.View):
         result = None
         if self.record:
             try:
-                result = await db.finish_play(
-                    self.user_id, self.play_date, correct, points, daily=STREAK_REQUIRES_WEEKLY
-                )
+                result = await finish_weekly_play(self.user_id, self.play_date, correct, points)
             except Exception:  # noqa: BLE001
                 log.exception("Could not save result for user %s", self.user_id)
                 await interaction.edit_original_response(
@@ -253,7 +274,7 @@ class ChallengeView(discord.ui.View):
         self.finished = True
         if self.record:
             try:
-                await db.finish_play(self.user_id, self.play_date, False, 0, daily=STREAK_REQUIRES_WEEKLY)
+                await finish_weekly_play(self.user_id, self.play_date, False, 0)
             except Exception:  # noqa: BLE001
                 log.exception("Could not record timeout for user %s", self.user_id)
         if self.origin:
@@ -445,7 +466,7 @@ VIEW_FOR_TYPE = {
 async def start_play_of_the_week(interaction: discord.Interaction, preview_index: int | None = None):
     user = interaction.user
     today = today_local()
-    iso = today.isoformat()
+    play_date = week_start_for(today).isoformat()
 
     # Database calls can take a moment; acknowledge right away (Discord allows only 3 seconds).
     await interaction.response.defer(ephemeral=True, thinking=True)
@@ -461,12 +482,14 @@ async def start_play_of_the_week(interaction: discord.Interaction, preview_index
             )
             return
 
-        play = await db.get_play(user.id, iso)
+        play = await db.get_play(user.id, play_date)
         if play:
-            await interaction.edit_original_response(content=await _existing_play_message(user.id, iso, play))
+            await interaction.edit_original_response(
+                content=await _existing_play_message(user.id, play_date, play)
+            )
             return
         challenge = challenge_for(today)
-        if not await db.start_play(user.id, user.display_name, iso, challenge["id"]):
+        if not await db.start_play(user.id, user.display_name, play_date, challenge["id"]):
             await interaction.edit_original_response(
                 content="You already have this week's Play of the Week. Check **Stats** to see your progress!"
             )
@@ -476,7 +499,7 @@ async def start_play_of_the_week(interaction: discord.Interaction, preview_index
         challenge = CHALLENGES[preview_index - 1]
         record = False
 
-    view = VIEW_FOR_TYPE[challenge["type"]](challenge, user.id, iso, record)
+    view = VIEW_FOR_TYPE[challenge["type"]](challenge, user.id, play_date, record)
     await interaction.edit_original_response(embed=view.intro_embed(), view=view)
     view.origin = interaction
 
@@ -484,7 +507,7 @@ async def start_play_of_the_week(interaction: discord.Interaction, preview_index
 async def _existing_play_message(user_id: int, iso: str, play: dict) -> str:
     if play["status"] == "pending":
         if play["age_seconds"] > (SESSION_MINUTES + 1) * 60:
-            await db.finish_play(user_id, iso, False, 0, daily=STREAK_REQUIRES_WEEKLY)
+            await finish_weekly_play(user_id, iso, False, 0)
             return "Your earlier session expired and counted as a loss. Come back next week for a new Play of the Week!"
         return (
             "You already have an active Play of the Week - finish it first! "
@@ -493,7 +516,7 @@ async def _existing_play_message(user_id: int, iso: str, play: dict) -> str:
     icon = "✅" if play["status"] == "correct" else "❌"
     return (
         f"{icon} You've already played this week's Play of the Week. "
-        f"A new one unlocks at midnight ({TZ.key}). Check **Stats** to see your progress!"
+        f"A new one unlocks Sunday at 12:00 AM ({TZ.key}). Check **Stats** to see your progress!"
     )
 
 
@@ -843,7 +866,7 @@ async def raffle_export_cmd(interaction: discord.Interaction):
 @admin_only
 async def reset_this_week_cmd(interaction: discord.Interaction, member: discord.Member):
     await interaction.response.defer(ephemeral=True)
-    ok = await db.delete_play(member.id, today_local().isoformat())
+    ok = await db.delete_play(member.id, week_start_for(today_local()).isoformat())
     await interaction.followup.send(
         f"Reset this week's play for {member.display_name}." if ok else f"{member.display_name} has no play this week.",
         ephemeral=True,
