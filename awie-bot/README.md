@@ -63,7 +63,7 @@ You should see `Awie is online`. If it stops with a Supabase error, re-check the
 ### 4. Put it in your server
 In the channel where members will play, run **`/setup_menu`** (needs the *Manage Server* permission).
 That posts the permanent menu. Members' answers and stats are private (only they see them).
-To announce the new challenge automatically each Sunday at 12:00 AM, set `WEEKLY_ANNOUNCEMENT_CHANNEL_ID` to the announcement channel's ID in the bot's environment (Railway → service → **Variables**). Enable Developer Mode in Discord, right-click the channel, and choose **Copy Channel ID**. The bot needs permission to view and send messages in that channel. Announcements do not ping everyone.
+To announce the new challenge automatically each Sunday at 12:00 AM, set `WEEKLY_ANNOUNCEMENT_CHANNEL_ID` to the announcement channel's ID in the bot's environment (Railway → service → **Variables**). Enable Developer Mode in Discord, right-click the channel, and choose **Copy Channel ID**. The bot needs permission to view and send messages in that channel. Announcements do not ping everyone and include **Play of the Week** and **Stats** buttons, so members can play without typing commands. Admins can use `/test_weekly_announcement` to post a preview with working buttons in the current channel.
 To use the stage attendance tracker with this same bot connection, add `STAGE_CHANNEL_ID` in Railway Variables and set it to your Discord Stage Channel's ID (Developer Mode → right-click the stage channel → **Copy Channel ID**). Ensure Awie's role can view that stage channel. Railway will redeploy the service after the variable is added.
 
 An admin can run `/attendance_start meeting_name` to begin tracking and `/attendance_stop` to stop and save durations to the existing Supabase `attendance` table. Provide the meeting name without quotes. The table must have `display_name`, `username`, `duration`, and `meeting_name` columns, and Awie's existing Supabase credentials must have permission to read and write it. The tracker stores live join times in memory, so do not restart or redeploy the Railway service during a meeting; intervals that have not yet been saved could be lost.
@@ -102,8 +102,9 @@ Then `sudo systemctl enable --now awie`.
 |---|---|---|
 | `/awie` | everyone | Private copy of the menu |
 | `/stats` | everyone | Your stats |
-| `/leaderboard` | everyone | Top 10 by score |
+| `/leaderboard` | everyone | Top 10 by score; shared 10-second anti-spam cooldown per server |
 | `/setup_menu` | admin | Post the permanent menu in this channel |
+| `/test_weekly_announcement` | admin | Post a preview of the Sunday announcement in this channel |
 | `/attendance_start <meeting_name>` | admin | Start tracking participants in the configured stage channel |
 | `/attendance_stop` | admin | Stop tracking and save attendance durations |
 | `/preview_challenge <1-18>` | admin | Try any challenge without saving results |

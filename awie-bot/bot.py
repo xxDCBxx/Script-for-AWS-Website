@@ -77,6 +77,14 @@ def challenge_for(d: date) -> dict:
     return CHALLENGES[challenge_index_for(d, len(CHALLENGES))]
 
 
+def weekly_announcement_embed() -> discord.Embed:
+    return discord.Embed(
+        title="🎮 A new Play of the Week is here!",
+        description="This week's AWS challenge is ready. Click **Play of the Week** below to start.",
+        color=ORANGE,
+    )
+
+
 def is_admin(interaction: discord.Interaction) -> bool:
     return isinstance(interaction.user, discord.Member) and interaction.user.guild_permissions.manage_guild
 
@@ -541,13 +549,11 @@ class AwieBot(commands.Bot):
         if not isinstance(channel, discord.abc.Messageable):
             raise TypeError("WEEKLY_ANNOUNCEMENT_CHANNEL_ID must identify a messageable Discord channel")
         challenge = challenge_for(today_local())
-        embed = discord.Embed(
-            title="🎮 A new Play of the Week is here!",
-            description="This week's AWS challenge is ready. Open the bot menu and choose **Play of the Week**, "
-            "or use `/awie` to start.",
-            color=ORANGE,
+        await channel.send(
+            embed=weekly_announcement_embed(),
+            view=MainMenu(),
+            allowed_mentions=discord.AllowedMentions.none(),
         )
-        await channel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
         log.info("Posted the weekly challenge announcement for %s", challenge["id"])
 
     @weekly_announcement.before_loop
@@ -758,6 +764,7 @@ async def stats_cmd(interaction: discord.Interaction):
 
 @bot.tree.command(name="leaderboard", description="Top 10 builders by score")
 @app_commands.guild_only()
+@app_commands.checks.cooldown(1, 10, key=lambda interaction: interaction.guild_id)
 async def leaderboard_cmd(interaction: discord.Interaction):
     await interaction.response.defer()
     rows = await db.top_users(10)
@@ -780,6 +787,20 @@ async def leaderboard_cmd(interaction: discord.Interaction):
 @admin_only
 async def setup_menu_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(embed=menu_embed(), view=MainMenu())
+
+
+@bot.tree.command(
+    name="test_weekly_announcement",
+    description="(Admin) Preview the weekly refresh announcement in this channel",
+)
+@app_commands.guild_only()
+@admin_only
+async def test_weekly_announcement_cmd(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        embed=weekly_announcement_embed(),
+        view=MainMenu(),
+        allowed_mentions=discord.AllowedMentions.none(),
+    )
 
 
 @bot.tree.command(name="preview_challenge", description="(Admin) Try any challenge without saving results")
@@ -833,6 +854,9 @@ async def reset_this_week_cmd(interaction: discord.Interaction, member: discord.
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if isinstance(error, app_commands.MissingPermissions):
         msg = "You need the **Manage Server** permission to use this command."
+    elif isinstance(error, app_commands.CommandOnCooldown):
+        seconds_remaining = max(1, int(error.retry_after + 0.99))
+        msg = f"The leaderboard was just refreshed. Try again in **{seconds_remaining} seconds**."
     else:
         log.exception("Command error", exc_info=error)
         msg = "Oops, Awie hit a snag. Please try again."
